@@ -9,12 +9,31 @@ import pandas as pd
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-	sys.path.insert(0, str(SRC))
 
-from forex_model.config import load_settings
-from forex_model.pipeline import predict_latest, run_training_pipeline
+
+def _bootstrap_src_path() -> None:
+	# Streamlit Cloud may launch from different working directories, so try a few common src paths.
+	candidates = [
+		ROOT / "src",
+		Path.cwd() / "src",
+		ROOT.parent / "src",
+	]
+	for candidate in candidates:
+		if candidate.exists() and candidate.is_dir():
+			candidate_str = str(candidate)
+			if candidate_str not in sys.path:
+				sys.path.insert(0, candidate_str)
+
+
+_bootstrap_src_path()
+
+try:
+	from forex_model.config import load_settings
+	from forex_model.pipeline import predict_latest, run_training_pipeline
+except ModuleNotFoundError:
+	_bootstrap_src_path()
+	from forex_model.config import load_settings
+	from forex_model.pipeline import predict_latest, run_training_pipeline
 
 st.set_page_config(page_title="Forex Multi-Timeframe Predictor", layout="wide")
 
